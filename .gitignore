@@ -1,1 +1,17 @@
 venv/
+.env
+__pycache__/
+
+# SQLite database files
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+
+# SQLite temporary files
+*.sqlite-journal
+*.sqlite3-journal
+*.db-journal
+*-journal
+*-shm
+*-wal

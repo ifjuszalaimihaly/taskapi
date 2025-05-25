@@ -19,5 +19,5 @@ from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('tasks/', include('tasksite.urls'))
+    path('tasks/', include('tasksite.urls')) # added the task api application to the project
 ]

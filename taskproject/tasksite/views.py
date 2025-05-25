@@ -11,11 +11,14 @@ from django.shortcuts import get_object_or_404
 
 @api_view(['GET'])
 def ApiOverview(request):
+    # Dictionary of available API endpoints
     api_urls = {
-        'all_items': '/',
-        'Add': '/create',
+        'API Overview': '/',
+        'View All': '/all/',
+        'Add': '/create/',
         'Update': '/update/pk',
-        'Delete': '/item/pk/delete'
+        'Delete': '/pk/delete',
+        'Smart Task Suggestions': '/smart_task_suggestions/',
     }
 
     return Response(api_urls)
@@ -24,25 +27,26 @@ def ApiOverview(request):
 def add_items(request):
     item = TaskSerializer(data=request.data)
 
-    # validating for already existing data
+    # Check for existing data with the same fields
     if Task.objects.filter(**request.data).exists():
         raise serializers.ValidationError('This data already exists')
 
+    # Validate and save the new task if data is valid
     if item.is_valid():
         item.save()
         return Response(item.data)
     else:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    
+
 @api_view(['GET'])
 def view_items(request):
     # Base query: get all tasks
     queryset = Task.objects.all()
 
-    # Filtering by id
+    # Filter by id if provided
     id_param = request.query_params.get('id')
 
-    # Filtering by status and due_date (exact match)
+    # Filter by status or due_date if provided
     status_param = request.query_params.get('status')
     due_date_param = request.query_params.get('due_date')
 
@@ -53,7 +57,7 @@ def view_items(request):
     elif due_date_param:
         queryset = queryset.filter(due_date=due_date_param)
 
-    # Ordering by creation_date or due_date (ascending or descending)
+    # Apply ordering by specified field and direction
     ordering_field = request.query_params.get('ordering_field')
     ordering_dir = request.query_params.get('ordering_dir')
     if ordering_field in ['creation_date', 'due_date']:
@@ -63,37 +67,42 @@ def view_items(request):
             ordering = ordering_field
         queryset = queryset.order_by(ordering)
 
-    # Return results if any, otherwise return 404
+    # Serialize and return data if found, otherwise return 404
     if queryset.exists():
         serializer = TaskSerializer(queryset, many=True)
         return Response(serializer.data)
     else:
         return Response({"detail": "No matching tasks found."}, status=status.HTTP_404_NOT_FOUND)
-    
 
 @api_view(['POST'])
 def update_items(request, pk):
+    # Retrieve task by primary key
     item = Task.objects.get(pk=pk)
+
+    # Update task with new data
     data = TaskSerializer(instance=item, data=request.data)
 
+    # Validate and save updated task
     if data.is_valid():
         data.save()
         return Response(data.data)
     else:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    
 
 @api_view(['DELETE'])
 def delete_items(request, pk):
+    # Retrieve and delete task by primary key
     item = get_object_or_404(Task, pk=pk)
     item.delete()
     return Response(status=status.HTTP_202_ACCEPTED)
 
-
 @api_view(['GET'])
 def smart_task_suggestions(request):
+    # Retrieve all tasks from the database
     items = Task.objects.all()
     list_items = []
+
+    # Convert each task to schema format for processing
     for item in items:
         list_item = TaskSchema(
             title=item.title,
@@ -103,6 +112,8 @@ def smart_task_suggestions(request):
             status=item.status
         )
         list_items.append(list_item)
+
+    # Generate AI-based suggestions using OpenAI service
     return Response([
         item.model_dump()
         for item in OpenAIService().generate_taks(items=list_items).items

@@ -37,8 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'tasksite'    
+    'rest_framework', # Added the imported rest_framework to appliaction, to be able handle JSON responses, and REST API
+    'tasksite' # added the task api application
 ]
 
 MIDDLEWARE = [
