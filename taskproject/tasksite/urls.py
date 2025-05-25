@@ -7,4 +7,5 @@ urlpatterns = [
     path('all/', views.view_items, name='view_items'),
     path('update/<int:pk>/', views.update_items, name='update-items'),
     path('<int:pk>/delete/', views.delete_items, name='delete-items'),
+    path('smart_task_suggestions/', views.smart_task_suggestions, name='smart_task_suggestions'),
 ]

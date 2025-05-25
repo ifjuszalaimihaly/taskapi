@@ -1,5 +1,9 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from .open_ai_service import OpenAIService
+
+from .schemas import TaskList, TaskSchema
 from .models import Task
 from .serializers import TaskSerializer
 from rest_framework import serializers, status
@@ -84,3 +88,22 @@ def delete_items(request, pk):
     item = get_object_or_404(Task, pk=pk)
     item.delete()
     return Response(status=status.HTTP_202_ACCEPTED)
+
+
+@api_view(['GET'])
+def smart_task_suggestions(request):
+    items = Task.objects.all()
+    list_items = []
+    for item in items:
+        list_item = TaskSchema(
+            title=item.title,
+            description=item.description,
+            creation_date=item.creation_date,
+            due_date=item.due_date,
+            status=item.status
+        )
+        list_items.append(list_item)
+    return Response([
+        item.model_dump()
+        for item in OpenAIService().generate_taks(items=list_items).items
+    ])
