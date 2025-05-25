@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from .models import Task
 from .serializers import TaskSerializer
 from rest_framework import serializers, status
+from django.shortcuts import get_object_or_404
 
 @api_view(['GET'])
 def ApiOverview(request):
@@ -59,3 +60,10 @@ def update_items(request, pk):
         return Response(data.data)
     else:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+
+@api_view(['DELETE'])
+def delete_items(request, pk):
+    item = get_object_or_404(Task, pk=pk)
+    item.delete()
+    return Response(status=status.HTTP_202_ACCEPTED)
