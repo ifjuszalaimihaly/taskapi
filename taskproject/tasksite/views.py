@@ -9,8 +9,6 @@ from django.shortcuts import get_object_or_404
 def ApiOverview(request):
     api_urls = {
         'all_items': '/',
-        'Search by Category': '/?category=category_name',
-        'Search by Subcategory': '/?subcategory=category_name',
         'Add': '/create',
         'Update': '/update/pk',
         'Delete': '/item/pk/delete'
@@ -34,20 +32,39 @@ def add_items(request):
     
 @api_view(['GET'])
 def view_items(request):
-    
-    
-    # checking for the parameters from the URL
-    if request.query_params:
-        items = Task.objects.filter(**request.query_params.dict())
-    else:
-        items = Task.objects.all()
+    # Base query: get all tasks
+    queryset = Task.objects.all()
 
-    # if there is something in items else raise error
-    if items:
-        serializer = TaskSerializer(items, many=True)
+    # Filtering by id
+    id_param = request.query_params.get('id')
+
+    # Filtering by status and due_date (exact match)
+    status_param = request.query_params.get('status')
+    due_date_param = request.query_params.get('due_date')
+
+    if id_param:
+        queryset = queryset.filter(id=id_param)
+    elif status_param:
+        queryset = queryset.filter(status=status_param)
+    elif due_date_param:
+        queryset = queryset.filter(due_date=due_date_param)
+
+    # Ordering by creation_date or due_date (ascending or descending)
+    ordering_field = request.query_params.get('ordering_field')
+    ordering_dir = request.query_params.get('ordering_dir')
+    if ordering_field in ['creation_date', 'due_date']:
+        if ordering_dir == 'desc':
+            ordering = f'-{ordering_field}'
+        else:
+            ordering = ordering_field
+        queryset = queryset.order_by(ordering)
+
+    # Return results if any, otherwise return 404
+    if queryset.exists():
+        serializer = TaskSerializer(queryset, many=True)
         return Response(serializer.data)
     else:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "No matching tasks found."}, status=status.HTTP_404_NOT_FOUND)
     
 
 @api_view(['POST'])
